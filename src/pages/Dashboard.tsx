@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FiArrowUpCircle,
@@ -10,40 +10,41 @@ import {
 import TransactionItem from "../components/TransactionItem";
 import Pagination from "../components/Pagination";
 import DashboardCard from "../components/DashboardCard";
-
+import { useAppDispatch, useAppSelector } from "../store/hook";
+import { fetchDashboardData } from "@/store/transactions/transactionsSlice";
+ 
+ 
 const Dashboard = () => {
+  const dispatch = useAppDispatch();
+  const dashboardData = useAppSelector((state) => state.transactions.dashboardData);
+ 
   const getOneMonthAgoDate = () => {
     const date = new Date();
     date.setMonth(date.getMonth() - 1);
     return date.toISOString().split("T")[0];
   };
-
+ 
   const getOneMonthLaterDate = () => {
     const date = new Date();
     date.setMonth(date.getMonth() + 1);
     return date.toISOString().split("T")[0];
   };
-
+ 
   const [startDate, setStartDate] = useState(getOneMonthAgoDate());
   const [endDate, setEndDate] = useState(getOneMonthLaterDate());
-
+ 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [currentType, setCurrentType] = useState("all");
-
-  const dashboardData = {
-    income: 50000,
-    expense: 30000,
-    balance: 20000,
-    ledgerCategories: [
-      { id: 1, name: "เงินเดือน", balance: 30000 },
-      { id: 2, name: "อาหาร", balance: -5000 },
-      { id: 3, name: "การเดินทาง", balance: -3000 },
-      { id: 4, name: "ความบันเทิง", balance: -2000 },
-      { id: 5, name: "รายได้เสริม", balance: 20000 },
-    ],
-  };
-
+ 
+  const handleDateFilterChange = () => {
+    dispatch(fetchDashboardData({startDate, endDate}))
+  }
+ 
+  useEffect(() => {
+    dispatch(fetchDashboardData({ startDate, endDate }))
+  }, [])
+ 
   const sampleLedgers = [
     {
       id: "1",
@@ -91,34 +92,34 @@ const Dashboard = () => {
       createdAt: "2025-05-20",
     },
   ];
-
-  const handleDateFilterChange = () => {
-    console.log("ค้นหาด้วยวันที่:", { startDate, endDate });
-  };
-
+ 
+  // const handleDateFilterChange = () => {
+  //   console.log("ค้นหาด้วยวันที่:", { startDate, endDate });
+  // };
+ 
   const handlePageChange = (pageNumber: any) => {
     setCurrentPage(pageNumber);
     console.log("เปลี่ยนหน้าเป็น:", pageNumber);
   };
-
+ 
   const handlePageSizeChange = (newSize: any) => {
     setPageSize(newSize);
     setCurrentPage(1);
     console.log("เปลี่ยนจำนวนรายการต่อหน้าเป็น:", newSize);
   };
-
+ 
   const handleTypeFilter = (type: any) => {
     setCurrentType(type);
     setCurrentPage(1);
     console.log("กรองตามประเภท:", type);
   };
-
+ 
   const handleDeleteLedger = (id: any) => {
     if (window.confirm("คุณต้องการลบรายการนี้ใช่หรือไม่?")) {
       console.log("ลบรายการ ID:", id);
     }
   };
-
+ 
   const formatCurrency = (value: any) => {
     return new Intl.NumberFormat("th-TH", {
       style: "currency",
@@ -126,20 +127,20 @@ const Dashboard = () => {
       minimumFractionDigits: 0,
     }).format(value);
   };
-
+ 
   const paginationMeta = {
     page: currentPage,
     limit: pageSize,
     total: 50,
     totalPages: 5,
   };
-
+ 
   return (
     <div className="page-container">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">
         บันทึกรายรับรายจ่าย
       </h1>
-
+ 
       <div className="card mb-6">
         <div className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -178,46 +179,46 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
+ 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <DashboardCard
           title="รายรับทั้งหมด"
-          amount={dashboardData.income}
+          amount={dashboardData?.income || 0}
           icon={<FiArrowUpCircle />}
           bgColor="bg-white"
           textColor="text-green-600"
         />
-
+ 
         <DashboardCard
           title="รายจ่ายทั้งหมด"
-          amount={dashboardData.expense}
+          amount={dashboardData?.expense || 0}
           icon={<FiArrowDownCircle />}
           bgColor="bg-white"
           textColor="text-red-600"
         />
-
+ 
         <DashboardCard
           title="ยอดคงเหลือ"
-          amount={dashboardData.balance}
+          amount={dashboardData?.balance || 0}
           icon={<FiDollarSign />}
           bgColor="bg-white"
           textColor={
-            dashboardData.balance >= 0 ? "text-blue-600" : "text-red-600"
+            (dashboardData?.balance || 0) >= 0 ? "text-blue-600" : "text-red-600"
           }
         />
       </div>
-
+ 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
         <div className="card lg:col-span-1">
           <div className="border-b pb-4 p-6">
             <h2 className="text-lg font-bold text-gray-800">สรุปตามหมวดหมู่</h2>
           </div>
-
+ 
           <div className="p-4">
-            {dashboardData.ledgerCategories &&
-            dashboardData.ledgerCategories.length > 0 ? (
+            {dashboardData?.ledgerCategories &&
+              dashboardData!.ledgerCategories.length > 0 ? (
               <ul className="divide-y">
-                {dashboardData.ledgerCategories.map((category) => (
+                {dashboardData!.ledgerCategories.map((category) => (
                   <li key={category.id} className="py-3">
                     <div className="flex justify-between items-center">
                       <p className="font-medium">{category.name}</p>
@@ -249,7 +250,7 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-
+ 
         <div className="card lg:col-span-3">
           <div className="flex justify-between items-center border-b pb-4 p-6">
             <h2 className="text-lg font-bold text-gray-800">รายการธุรกรรม</h2>
@@ -261,7 +262,7 @@ const Dashboard = () => {
               เพิ่มธุรกรรม
             </Link>
           </div>
-
+ 
           <div className="p-4 border-b">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -272,31 +273,28 @@ const Dashboard = () => {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleTypeFilter("all")}
-                    className={`px-3 py-1 rounded-md ${
-                      currentType === "all"
+                    className={`px-3 py-1 rounded-md ${currentType === "all"
                         ? "bg-primary text-white"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
+                      }`}
                   >
                     ทั้งหมด
                   </button>
                   <button
                     onClick={() => handleTypeFilter("income")}
-                    className={`px-3 py-1 rounded-md ${
-                      currentType === "income"
+                    className={`px-3 py-1 rounded-md ${currentType === "income"
                         ? "bg-income text-white"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
+                      }`}
                   >
                     รายรับ
                   </button>
                   <button
                     onClick={() => handleTypeFilter("expense")}
-                    className={`px-3 py-1 rounded-md ${
-                      currentType === "expense"
+                    className={`px-3 py-1 rounded-md ${currentType === "expense"
                         ? "bg-expense text-white"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
+                      }`}
                   >
                     รายจ่าย
                   </button>
@@ -304,7 +302,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-
+ 
           <div className="overflow-hidden">
             {sampleLedgers.length > 0 ? (
               <>
@@ -332,7 +330,7 @@ const Dashboard = () => {
                     </tbody>
                   </table>
                 </div>
-
+ 
                 <div className="p-4 border-t">
                   <Pagination
                     currentPage={paginationMeta.page}
@@ -356,5 +354,5 @@ const Dashboard = () => {
     </div>
   );
 };
-
+ 
 export default Dashboard;
